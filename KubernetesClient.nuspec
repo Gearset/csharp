@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>KubernetesClient</id>
+        <version>$version$</version>
+        <description>K8s Client</description>
+        <authors>k8s csharp project team</authors>
+        <owners>Gearset</owners>
+    </metadata>
+    <files>
+        <file src=".\artifacts\**" target="lib\net452" />
+    </files>
+</package>
