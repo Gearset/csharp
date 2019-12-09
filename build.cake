@@ -7,6 +7,7 @@ var configuration = Argument("configuration", "Release");
 var buildNumber = GitVersioningGetVersion().SemVer2;
 var artifactsDir = "./artifacts";
 var projectToPublish = "./src/KubernetesClient/KubernetesClient.csproj";
+var solution = "./kubernetes-client.sln";
 var feedzKey = EnvironmentVariable("NUGET_FEEDZ_API_KEY");
 
 // Shared build tasks that hopefully should be copy-pastable
@@ -22,14 +23,42 @@ Task("Clean")
 Task("Restore")
     .IsDependentOn("Clean")
     .Does(() => {
-        DotNetCoreRestore(projectToPublish);
+        DotNetCoreRestore(solution);
+    });
+
+Task("Build")
+    .IsDependentOn("Restore")
+    .Does(() => {
+        DotNetCoreBuild(solution, new DotNetCoreBuildSettings
+        {
+            Configuration = configuration
+        });
+    });
+
+Task("Test")
+    .IsDependentOn("Build")
+    .Does(() => {
+        var settings = new DotNetCoreTestSettings
+        {
+            Configuration = configuration,
+            ArgumentCustomization = args =>
+                args.Append("/p:Include=\"[KubernetesClient]*\"")
+                    .Append("/p:Exclude=\"[KubernetesClient]k8s.Models.*\"")
+                    .Append("/p:Exclude=\"[KubernetesClient]k8s.Internal.*\"")
+        };
+
+        var projectFiles = GetFiles("./tests/**/*.csproj");
+        foreach (var file in projectFiles)
+        {
+            DotNetCoreTest(file.FullPath, settings);
+        }
     });
 
 Task("Pack-NuGet")
-    .IsDependentOn("Restore")
+    .IsDependentOn("Test")
     .Does(() => {
         DotNetCorePack(projectToPublish, new DotNetCorePackSettings {
-			Configuration = configuration,
+            Configuration = configuration,
             OutputDirectory = artifactsDir
         });
     });
